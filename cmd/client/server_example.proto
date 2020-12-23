@@ -1,0 +1,17 @@
+syntax = "proto3"; 
+package main; 
+
+message HiddenData {
+    string message = 1;
+}
+
+message PublicData {
+    string message = 1;
+}
+
+message NoArguments {}
+
+service ServerExample {
+    rpc GetHiddenData(NoArguments) returns (HiddenData) {};
+    rpc GetPublicData(NoArguments) returns (PublicData) {};
+}

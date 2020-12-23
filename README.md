@@ -31,4 +31,4 @@ If you have troubles or questions please [open an issue](https://github.com/LdDl
 * gRPC and protobuf for doing "'client-server'" application - [grpc](https://github.com/grpc/grpc-go). License is Apache-2.0
 
 ## License
-You can check it [here](https://github.com/LdDl/grpc-jwt/blob/master/LICENSE)
+You can check it [here](https://github.com/LdDl/grpc-jwt/blob/master/LICENSE.md)

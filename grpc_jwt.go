@@ -81,6 +81,23 @@ func (mw *JWTgRPC) Init() error {
 	return nil
 }
 
+// CheckIfTokenExpire check if token expire
+func (mw *JWTgRPC) CheckIfTokenExpire(tokenString string) (jwt.MapClaims, error) {
+	token, err := mw.ParseToken(tokenString)
+	if err != nil {
+		validationErr, ok := err.(*jwt.ValidationError)
+		if !ok || validationErr.Errors != jwt.ValidationErrorExpired {
+			return nil, err
+		}
+	}
+	claims := token.Claims.(jwt.MapClaims)
+	origIat := int64(claims["orig_iat"].(float64))
+	if origIat < mw.TimeFunc().Add(-mw.MaxRefresh).Unix() {
+		return nil, ErrExpiredToken
+	}
+	return claims, nil
+}
+
 // GetClaimsFromJWT get claims from JWT token
 func (mw *JWTgRPC) GetClaimsFromJWT(tokenString string) (map[string]interface{}, error) {
 	token, err := mw.ParseToken(tokenString)

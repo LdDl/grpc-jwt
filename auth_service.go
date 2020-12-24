@@ -2,6 +2,7 @@ package grpcjwt
 
 import (
 	fmt "fmt"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
@@ -88,7 +89,7 @@ func (jwtService *JWTInterceptor) LoginHandler(ctx context.Context, in *LoginReq
 		return nil, ErrFailedTokenCreation
 	}
 
-	return &LoginResponse{Token: tokenString}, nil
+	return &LoginResponse{Code: 200, Token: tokenString, Expire: uint64(expire.Unix())}, nil
 }
 
 // AuthInterceptor Intercept provided methods and check token
@@ -132,4 +133,36 @@ func (jwtService *JWTInterceptor) AuthInterceptor(ctx context.Context, req inter
 	}
 
 	return handler(ctx, req)
+}
+
+// RefreshToken Implement RefreshToken() to match interface of JWTServiceServer in jwt.pb.go
+func (jwtService *JWTInterceptor) RefreshToken(ctx context.Context, in *NoArguments) (*RefreshTokenResponse, error) {
+	meta, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, ErrEmptyParamToken.Error())
+	}
+	if len(meta["token"]) != 1 {
+		return nil, status.Error(codes.Unauthenticated, ErrEmptyParamToken.Error())
+	}
+	tokenString := meta["token"][0]
+	mw := jwtService.jwtObject
+
+	claims, err := mw.CheckIfTokenExpire(tokenString)
+	if err != nil {
+		return &RefreshTokenResponse{Code: 500, Token: "", Expire: uint64(time.Now().Unix())}, err
+	}
+
+	newToken := jwt.New(jwt.GetSigningMethod(mw.SigningAlgorithm))
+	newClaims := newToken.Claims.(jwt.MapClaims)
+	for key := range claims {
+		newClaims[key] = claims[key]
+	}
+	expire := mw.TimeFunc().Add(mw.Timeout)
+	newClaims["exp"] = expire.Unix()
+	newClaims["orig_iat"] = mw.TimeFunc().Unix()
+	newTokenString, err := mw.signedString(newToken)
+	if err != nil {
+		return &RefreshTokenResponse{Code: 500, Token: "", Expire: uint64(time.Now().Unix())}, err
+	}
+	return &RefreshTokenResponse{Code: 200, Token: newTokenString, Expire: uint64(expire.Unix())}, nil
 }

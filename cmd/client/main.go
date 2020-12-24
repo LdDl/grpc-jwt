@@ -14,7 +14,7 @@ var (
 	addr = "localhost"
 	port = 65012
 
-	correctUsername = "user2"
+	correctUsername = "user"
 	correctPassword = "pass"
 )
 
@@ -81,5 +81,25 @@ func main() {
 		fmt.Println("private data is", privateData)
 	} else {
 		fmt.Println("private data is nil")
+	}
+
+	// Try to refresh token
+	ctx, cancel = context.WithTimeout(
+		metadata.NewOutgoingContext(
+			context.Background(),
+			metadata.New(map[string]string{"token": authResp.Token}),
+		),
+		1*time.Second,
+	)
+	defer cancel()
+	refreshTokenResp, err := grpcAuthClient.RefreshToken(ctx, &grpcjwt.NoArguments{})
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if refreshTokenResp != nil {
+		fmt.Println("refresh token response is", *refreshTokenResp)
+	} else {
+		fmt.Println("refresh token response is nil")
 	}
 }

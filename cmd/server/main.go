@@ -66,6 +66,7 @@ func main() {
 	*/
 	methodsToIntercept := []string{
 		"/main.ServerExample/GetHiddenData",
+		"/grpcjwt.JWTService/RefreshToken",
 	}
 
 	// Init database
@@ -125,9 +126,8 @@ func main() {
 			if password == user.Password {
 				if user.Access == "Authentication" {
 					return login, nil
-				} else {
-					return login, grpcjwt.ErrForbidden
 				}
+				return login, grpcjwt.ErrForbidden
 			}
 			return login, grpcjwt.ErrFailedAuthentication
 		},

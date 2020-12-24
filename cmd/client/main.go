@@ -14,9 +14,8 @@ var (
 	addr = "localhost"
 	port = 65012
 
-	correctUsername = "admin"
-	correctPassword = "strong_password"
-	wrongPassword   = "wrong_password"
+	correctUsername = "user"
+	correctPassword = "pass"
 )
 
 func main() {

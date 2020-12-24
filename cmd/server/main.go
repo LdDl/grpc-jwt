@@ -27,11 +27,25 @@ func (server *MyCustomServer) GetPublicData(ctx context.Context, in *NoArguments
 	return &PublicData{Message: "this is public data (jwt token is not required)"}, nil
 }
 
-// UserData Representation of data in database
+// UserData Fake representation of data in database
 type UserData struct {
-	Login  string
-	RoleID string
-	ID     string
+	Name        string
+	Password    string
+	Description string
+	Access      string
+}
+
+// Database Fake representation of database
+type Database []UserData
+
+// CheckUser Muck up function for checking users in database
+func (db Database) CheckUser(login string) (UserData, error) {
+	for i := range db {
+		if db[i].Name == login {
+			return db[i], nil
+		}
+	}
+	return UserData{}, fmt.Errorf("No user")
 }
 
 var (
@@ -54,6 +68,22 @@ func main() {
 		"/main.ServerExample/GetHiddenData",
 	}
 
+	// Init database
+	database := Database{
+		UserData{
+			Name:        "user",
+			Password:    "pass",
+			Description: "simple user",
+			Access:      "Authentication",
+		},
+		UserData{
+			Name:        "user2",
+			Password:    "pass",
+			Description: "simple user2",
+			Access:      "Banned",
+		},
+	}
+
 	// Init interceptor
 	jwtInterceptor, err := grpcjwt.NewJWTInterceptor(&grpcjwt.JWTgRPC{
 		Realm:            "my custom realm",
@@ -64,32 +94,45 @@ func main() {
 		SigningAlgorithm: "HS256",
 		TimeFunc:         time.Now,
 		PayloadFunc: func(login interface{}) map[string]interface{} {
-			if login == "admin" {
-				return jwt.MapClaims{
-					"login": login.(string),
-					"role":  "role_info",
-					"id":    "user's ID",
-				}
+			user, err := database.CheckUser(login.(string))
+			if err != nil {
+				return jwt.MapClaims{}
 			}
-			return jwt.MapClaims{}
+			return jwt.MapClaims{
+				"login": login.(string), // ignore type checking if you sure
+				"desc":  user.Description,
+			}
 		},
 		IdentityHandler: func(claims map[string]interface{}) interface{} {
+			login, ok := claims["login"]
+			if !ok {
+				return nil
+			}
+			desc, ok := claims["desc"]
+			if !ok {
+				return nil
+			}
 			return &UserData{
-				Login:  claims["login"].(string),
-				RoleID: claims["role"].(string),
-				ID:     claims["id"].(string),
+				Name:        login.(string), // ignore type checking if you sure
+				Description: desc.(string),  // ignore type checking if you sure
 			}
 		},
 		Authenticator: func(login, password string) (interface{}, error) {
-			if login == "admin" && password == "strong_password" {
-				return login, nil
-			} else {
+			user, err := database.CheckUser(login)
+			if err != nil {
 				return login, grpcjwt.ErrFailedAuthentication
 			}
+			if password == user.Password && user.Access == "Authentication" {
+				return login, grpcjwt.ErrForbidden
+			}
+			return login, grpcjwt.ErrFailedAuthentication
 		},
 		Authorizator: func(userInfo interface{}) bool {
-			userInfoStruct := userInfo.(*UserData)
-			if userInfoStruct.Login == "admin" {
+			user, err := database.CheckUser(userInfo.(*UserData).Name) // ignore type checking if you sure
+			if err != nil {
+				return false
+			}
+			if user.Access == "Authentication" {
 				return true
 			}
 			return false

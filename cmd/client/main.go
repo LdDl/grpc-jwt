@@ -14,7 +14,7 @@ var (
 	addr = "localhost"
 	port = 65012
 
-	correctUsername = "user"
+	correctUsername = "user2"
 	correctPassword = "pass"
 )
 

@@ -122,8 +122,12 @@ func main() {
 			if err != nil {
 				return login, grpcjwt.ErrFailedAuthentication
 			}
-			if password == user.Password && user.Access == "Authentication" {
-				return login, grpcjwt.ErrForbidden
+			if password == user.Password {
+				if user.Access == "Authentication" {
+					return login, nil
+				} else {
+					return login, grpcjwt.ErrForbidden
+				}
 			}
 			return login, grpcjwt.ErrFailedAuthentication
 		},

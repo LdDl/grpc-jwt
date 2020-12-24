@@ -34,63 +34,20 @@ protoc -I . *.proto --go_out=plugins=grpc:.
 
 Whole example for server-side is [here](cmd/server/main.go)
 
-Here is a little explanation about main stuff:
-
-* Determine what services you want to intercept for JWT validation:
-    ```go
-    // ...
-    // Let's spell out '/main.ServerExample/GetHiddenData':
-    // main - name of your server implementation package
-    // ServerExample - name of gRPC service
-    // GetHiddenData - name of method
-    methodsToIntercept := []string{
-        "/main.ServerExample/GetHiddenData",
-    }
-    // ...
-    ```
-
-* Initialize JWT interceptor
-    ```go
-    // ...
-    jwtInterceptor, err := grpcjwt.NewJWTInterceptor(&grpcjwt.JWTgRPC{
-        Realm:            "Provide realm name",
-        Key:              []byte("Provide secret key"),
-        Timeout:          time.Hour * 7 * 24,
-        MaxRefresh:       time.Hour * 7 * 24,
-        IdentityKey:      "Provide identity key",
-        SigningAlgorithm: "HS256", // You can pick RS512 and provide PrivKeyFile, PubKeyFile fields
-        TimeFunc:         time.Now,
-        PayloadFunc: func(login interface{}) map[string]interface{} {
-            // Describe logic to handle payloading
-        },
-        IdentityHandler: func(claims map[string]interface{}) interface{} {
-            // Describe logic to make indentity work
-        },
-        Authenticator: func(login, password string) (interface{}, error) {
-            // Describe logic to handle authentication
-        },
-        Authorizator: func(userInfo interface{}) bool {
-        // Describe logic to handle authorization
-        },
-    }, methodsToIntercept...) // <=-- Do not forget to provide desired methods to be intercepted with JWT validation
-    // ...
-    ```
-
-* Initialize gRPC server and register JWT
-    ```go
-    //...
-    fullServer := grpc.NewServer(
-        grpc.UnaryInterceptor(jwtInterceptor.AuthInterceptor),
-    )
-    //...
-    grpcjwt.RegisterJWTServiceServer(fullServer, jwtInterceptor)
-    //...
-    ```
+How to run server-side:
+```shell
+go run .
+```
 
 ### **Client example**
 
 Whole example for client-side is [here](cmd/client/main.go)
-    
+
+How to run client-side:
+```shell
+go run .
+``` 
+
 ## **Support**
 
 If you have troubles or questions please [open an issue](https://github.com/LdDl/grpc-jwt/issues/new).

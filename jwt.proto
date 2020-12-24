@@ -12,6 +12,15 @@ message LoginResponse {
     uint64 expire = 3;
 }
 
+message NoArguments {}
+
+message RefreshTokenResponse {
+    uint32 code = 1;
+    string token = 2;
+    uint64 expire = 3;
+}
+
 service JWTService {
     rpc LoginHandler(LoginRequest) returns (LoginResponse) {};
+    rpc RefreshToken(NoArguments) returns (RefreshTokenResponse) {};
 }

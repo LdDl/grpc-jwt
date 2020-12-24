@@ -24,7 +24,7 @@ func main() {
 	grpcURL := fmt.Sprintf("%s:%d", addr, port)
 	grpcConn, err := grpc.Dial(grpcURL, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
-		fmt.Printf("\t\t;Процедура прослушивания Redis завершена с ошибкой (1): %s\n", err.Error())
+		fmt.Printf("\t\t;Can't connect to gRPC (1): %s\n", err.Error())
 		return
 	}
 	defer grpcConn.Close()

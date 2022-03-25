@@ -166,3 +166,8 @@ func (jwtService *JWTInterceptor) RefreshToken(ctx context.Context, in *NoArgume
 	}
 	return &RefreshTokenResponse{Code: 200, Token: newTokenString, Expire: uint64(expire.Unix())}, nil
 }
+
+// ParseToken provides access to private method
+func (jwtService *JWTInterceptor) ParseToken(token string) (*jwt.Token, error) {
+	return jwtService.jwtObject.ParseToken(token)
+}

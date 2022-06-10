@@ -27,7 +27,7 @@ openssl rsa -in jwtRS512.key -pubout -outform PEM -out jwtRS512.key.pub
 
 If you want to re-build *.pb.go files
 ```bash
-protoc -I . *.proto --go_out=plugins=grpc:.
+protoc -I . ./*.proto --go_out=./ --go-grpc_out=./ --go-grpc_opt=paths=source_relative --experimental_allow_proto3_optional
 ```
 
 ### **Server example**

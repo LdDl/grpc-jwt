@@ -7,6 +7,7 @@ import (
 
 	grpcjwt "github.com/LdDl/grpc-jwt"
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/pkg/errors"
 	context "golang.org/x/net/context"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -20,6 +21,21 @@ type MyCustomServer struct {
 // GetHiddenData Implement GetHiddenData() to match interface of server_example.pb.go
 func (server *MyCustomServer) GetHiddenData(ctx context.Context, in *NoArguments) (*HiddenData, error) {
 	return &HiddenData{Message: "this is very hidden data (jwt token is required)"}, nil
+}
+
+// GetHiddenStreamData Implement GetHiddenStreamData() to match interface of server_example.pb.go
+func (server *MyCustomServer) GetHiddenStreamData(in *NoArguments, srv ServerExample_GetHiddenStreamDataServer) error {
+	for i := 0; i < 3; i++ {
+		err := srv.Send(&HiddenData{
+			Message: fmt.Sprintf("Ping #%d", i),
+		})
+		if err != nil {
+			fmt.Println(err)
+			return errors.Wrap(err, "Can't send message")
+		}
+		time.Sleep(1 * time.Second)
+	}
+	return nil
 }
 
 // GetPublicData Implement GetPublicData() to match interface of server_example.pb.go
@@ -66,6 +82,7 @@ func main() {
 	*/
 	methodsToIntercept := []string{
 		"/main.ServerExample/GetHiddenData",
+		"/main.ServerExample/GetHiddenStreamData",
 		"/grpcjwt.JWTService/RefreshToken",
 	}
 
@@ -151,6 +168,7 @@ func main() {
 	// Init full server: your server implementation + JWT part
 	fullServer := grpc.NewServer(
 		grpc.UnaryInterceptor(jwtInterceptor.AuthInterceptor),
+		grpc.StreamInterceptor(jwtInterceptor.AuthStreamInterceptor),
 	)
 
 	// Register your server implementation

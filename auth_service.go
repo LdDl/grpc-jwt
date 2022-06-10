@@ -154,10 +154,11 @@ func (jwtService *JWTInterceptor) AuthStreamInterceptor(srv interface{}, ss grpc
 	if !mw.Authorizator(identity) {
 		return status.Error(codes.Unauthenticated, ErrForbidden.Error())
 	}
-
-	ctx := metadata.NewIncomingContext(ss.Context())
+	ctx := metadata.NewIncomingContext(ss.Context(), metadata.New(
+		map[string]string{}),
+	)
 	newSS := newWrappedStream(ss, ctx)
-	return handler(ctx, newSS)
+	return handler(srv, newSS)
 }
 
 // AuthInterceptor Intercept provided methods and check token

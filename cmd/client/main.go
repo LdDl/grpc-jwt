@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	grpcjwt "github.com/LdDl/grpc-jwt"
@@ -62,7 +63,7 @@ func main() {
 		fmt.Println("public data is nil")
 	}
 
-	// Do request for private data.
+	// Do UNARY request for private data.
 	// Do not forget to provide token!!!
 	ctx, cancel := context.WithTimeout(
 		metadata.NewOutgoingContext(
@@ -102,4 +103,39 @@ func main() {
 	} else {
 		fmt.Println("refresh token response is nil")
 	}
+
+	// Do STREAM request for private data.
+	// Do not forget to provide token!!!
+	ctxStream, cancelStream := context.WithTimeout(
+		metadata.NewOutgoingContext(
+			context.Background(),
+			metadata.New(map[string]string{"token": authResp.Token}),
+		),
+		10*time.Second,
+	)
+	defer cancelStream()
+	privateStreamData, err := grpcClient.GetHiddenStreamData(ctxStream, &NoArguments{})
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	done := make(chan bool)
+	go func() {
+		for {
+			serverResp, err := privateStreamData.Recv()
+			if err == io.EOF {
+				return
+			}
+			if err != nil {
+				fmt.Println(err)
+				break
+			}
+			if serverResp == nil {
+				fmt.Println("Nil data")
+				return
+			}
+			fmt.Printf("Message from server: %v\n", serverResp.Message)
+		}
+	}()
+	<-done
 }

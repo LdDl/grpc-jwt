@@ -92,6 +92,74 @@ func (jwtService *JWTInterceptor) LoginHandler(ctx context.Context, in *LoginReq
 	return &LoginResponse{Code: 200, Token: tokenString, Expire: uint64(expire.Unix())}, nil
 }
 
+// wrappedStream wraps around the embedded grpc.ServerStream, and intercepts the RecvMsg and
+// SendMsg method call.
+type wrappedStream struct {
+	ctx context.Context
+	grpc.ServerStream
+}
+
+func (w *wrappedStream) RecvMsg(m interface{}) error {
+	return w.ServerStream.RecvMsg(m)
+}
+
+func (w *wrappedStream) SendMsg(m interface{}) error {
+	return w.ServerStream.SendMsg(m)
+}
+
+func newWrappedStream(s grpc.ServerStream, ctx context.Context) grpc.ServerStream {
+	return &wrappedStream{ServerStream: s, ctx: ctx}
+}
+
+func (w *wrappedStream) Context() context.Context {
+	return w.ctx
+}
+
+// AuthInterceptor Intercept provided methods and check token
+func (jwtService *JWTInterceptor) AuthStreamInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+
+	needIntercept := jwtService.checkMethod(info.FullMethod)
+	if !needIntercept {
+		return handler(srv, ss)
+	}
+
+	meta, ok := metadata.FromIncomingContext(ss.Context())
+
+	if !ok {
+		return status.Error(codes.Unauthenticated, ErrEmptyParamToken.Error())
+	}
+	if len(meta["token"]) != 1 {
+		return status.Error(codes.Unauthenticated, ErrEmptyParamToken.Error())
+	}
+
+	tokenString := meta["token"][0]
+	mw := jwtService.jwtObject
+	claims, err := mw.GetClaimsFromJWT(tokenString)
+	if err != nil {
+		return status.Error(codes.Unauthenticated, err.Error())
+	}
+	if claims["exp"] == nil {
+		return status.Error(codes.Unauthenticated, ErrMissingExpField.Error())
+	}
+
+	if _, ok := claims["exp"].(float64); !ok {
+		return status.Error(codes.Unauthenticated, ErrWrongFormatOfExp.Error())
+	}
+
+	if int64(claims["exp"].(float64)) < mw.TimeFunc().Unix() {
+		return status.Error(codes.Unauthenticated, ErrExpiredToken.Error())
+	}
+
+	identity := mw.IdentityHandler(claims)
+	if !mw.Authorizator(identity) {
+		return status.Error(codes.Unauthenticated, ErrForbidden.Error())
+	}
+
+	ctx := metadata.NewIncomingContext(ss.Context())
+	newSS := newWrappedStream(ss, ctx)
+	return handler(ctx, newSS)
+}
+
 // AuthInterceptor Intercept provided methods and check token
 func (jwtService *JWTInterceptor) AuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 

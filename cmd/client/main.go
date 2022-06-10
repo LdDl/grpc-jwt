@@ -124,14 +124,17 @@ func main() {
 		for {
 			serverResp, err := privateStreamData.Recv()
 			if err == io.EOF {
+				done <- true
 				return
 			}
 			if err != nil {
 				fmt.Println(err)
+				done <- true
 				break
 			}
 			if serverResp == nil {
 				fmt.Println("Nil data")
+				done <- true
 				return
 			}
 			fmt.Printf("Message from server: %v\n", serverResp.Message)

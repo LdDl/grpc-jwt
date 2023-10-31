@@ -6,7 +6,7 @@ import (
 	"time"
 
 	grpcjwt "github.com/LdDl/grpc-jwt"
-	jwt "github.com/dgrijalva/jwt-go"
+	jwt "github.com/golang-jwt/jwt"
 	"github.com/pkg/errors"
 	context "golang.org/x/net/context"
 	grpc "google.golang.org/grpc"

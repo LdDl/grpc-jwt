@@ -3,7 +3,7 @@ module github.com/LdDl/grpc-jwt
 go 1.14
 
 require (
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/protobuf v1.5.2
 	github.com/pkg/errors v0.9.1
 	golang.org/x/net v0.0.0-20200602114024-627f9648deb9

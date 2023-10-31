@@ -55,7 +55,7 @@ PRs are welcome!
 
 ## **Dependencies**
 
-* github.com/dgrijalva/jwt-go - License is [MIT](https://github.com/dgrijalva/jwt-go/blob/master/LICENSE)
+* github.com/golang-jwt/jwt - License is [MIT](https://github.com/golang-jwt/jwt/blob/master/LICENSE)
 * gRPC and protobuf for doing "'client-server'" application - [grpc](https://github.com/grpc/grpc-go). License is Apache-2.0
 
 ## **License**
